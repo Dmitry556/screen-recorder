@@ -13,8 +13,8 @@ set -euo pipefail
 SAVE_DIR="$HOME/ScreenMemory"
 SCREEN_ID="2"                      # Capture screen 0 (verified via avfoundation)
 CHUNK_DURATION=14400               # 4 hours in seconds
-FPS=1                              # 1 frame per second
-BITRATE="200k"                     # ~50MB per hour
+FPS=0.25                           # 1 frame per 4 seconds (sufficient for AI analysis)
+BITRATE="150k"                     # ~15MB per hour at 0.25fps
 FFMPEG="/opt/homebrew/bin/ffmpeg"
 LOG_FILE="$SAVE_DIR/recorder.log"
 
@@ -66,7 +66,7 @@ echo "════════════════════════�
 echo " ContextRecorder - 24/7 Screen Memory"
 echo " Save Dir: $SAVE_DIR"
 echo " Chunk Duration: $(($CHUNK_DURATION / 3600)) hours"
-echo " Target Size: ~50MB per hour"
+echo " Target Size: ~15MB per hour (0.25 FPS)"
 echo "═══════════════════════════════════════════════════════════════════════"
 
 check_dependencies
@@ -88,24 +88,26 @@ while true; do
 
     # Record chunk using hardware acceleration
     # -f avfoundation: macOS screen capture
-    # -framerate 1: 1 fps (sufficient for productivity analysis)
+    # -framerate 1: Capture at 1fps (avfoundation minimum)
+    # -vf fps=0.25: Downsample to 1 frame per 4 seconds
     # -c:v h264_videotoolbox: Apple Silicon hardware encoder (near-zero CPU)
-    # -b:v 200k: Low bitrate for small files
+    # -b:v 150k: Low bitrate for small files
     # -pix_fmt yuv420p: Required for QuickTime/AI compatibility
-    # -g 60: Keyframe every 60 frames (1 minute at 1fps)
+    # -g 15: Keyframe every 15 frames (~1 minute at 0.25fps)
     # -an: No audio (privacy)
     # -t: Duration in seconds
 
     "$FFMPEG" \
         -f avfoundation \
-        -framerate "$FPS" \
+        -framerate 1 \
         -capture_cursor 1 \
         -i "$SCREEN_ID" \
         -t "$CHUNK_DURATION" \
+        -vf "fps=$FPS" \
         -c:v h264_videotoolbox \
         -b:v "$BITRATE" \
         -pix_fmt yuv420p \
-        -g 60 \
+        -g 15 \
         -an \
         -y \
         "$FILEPATH" \
