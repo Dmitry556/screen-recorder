@@ -3,16 +3,24 @@
 # Check ContextRecorder status
 #
 
-PID_FILE="$HOME/.context-recorder.pid"
 SAVE_DIR="$HOME/ScreenMemory"
+PLIST_NAME="com.local.contextrecorder"
 
 echo "═══════════════════════════════════════════════════════════════════════"
 echo " ContextRecorder Status"
 echo "═══════════════════════════════════════════════════════════════════════"
 
-# Check if running
-if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    echo "Status: RUNNING (PID: $(cat "$PID_FILE"))"
+# Check launchd service
+if launchctl list 2>/dev/null | grep -q "$PLIST_NAME"; then
+    PID=$(launchctl list | grep "$PLIST_NAME" | awk '{print $1}')
+    if [[ "$PID" != "-" && -n "$PID" ]]; then
+        echo "Status: RUNNING (launchd service, PID: $PID)"
+    else
+        echo "Status: INSTALLED but not running (check logs)"
+    fi
+# Check manual PID file
+elif [[ -f "$HOME/.context-recorder.pid" ]] && kill -0 "$(cat "$HOME/.context-recorder.pid")" 2>/dev/null; then
+    echo "Status: RUNNING (manual, PID: $(cat "$HOME/.context-recorder.pid"))"
 else
     echo "Status: STOPPED"
 fi
