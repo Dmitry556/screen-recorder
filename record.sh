@@ -13,7 +13,7 @@ set -uo pipefail
 # ═══════════════════════════════════════════════════════════════════════════════
 
 SAVE_DIR="$HOME/ScreenMemory"
-CHUNK_DURATION=14400               # 4 hours in seconds
+CHUNK_DURATION=3600                # 1 hour in seconds (shorter = safer)
 FPS=0.25                           # 1 frame per 4 seconds
 BITRATE="150k"                     # ~25MB per hour
 FFMPEG="/opt/homebrew/bin/ffmpeg"
@@ -151,6 +151,7 @@ while true; do
     log "Recording: $FILEPATH (screen:$SCREEN_ID)"
 
     # Record chunk - if it fails, loop will retry
+    # -movflags: frag_keyframe+empty_moov makes file playable even if interrupted
     "$FFMPEG" \
         -f avfoundation \
         -framerate 1 \
@@ -162,6 +163,7 @@ while true; do
         -b:v "$BITRATE" \
         -pix_fmt yuv420p \
         -g 15 \
+        -movflags +frag_keyframe+empty_moov \
         -an \
         -y \
         "$FILEPATH" \
