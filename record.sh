@@ -144,11 +144,18 @@ while true; do
     TODAY=$(date +"%Y-%m-%d")
     mkdir -p "$SAVE_DIR/$TODAY"
 
+    # Calculate seconds until midnight (to ensure chunks break at day boundaries)
+    SECONDS_UNTIL_MIDNIGHT=$(( 86400 - $(date +%s) % 86400 ))
+
+    # Use shorter of: standard chunk duration OR time until midnight
+    # This ensures recordings never span multiple days
+    ACTUAL_DURATION=$((CHUNK_DURATION < SECONDS_UNTIL_MIDNIGHT ? CHUNK_DURATION : SECONDS_UNTIL_MIDNIGHT))
+
     # Generate filename
     NOW=$(date +"%H-%M-%S")
     FILEPATH="$SAVE_DIR/$TODAY/chunk_$NOW.mp4"
 
-    log "Recording: $FILEPATH (screen:$SCREEN_ID)"
+    log "Recording: $FILEPATH (screen:$SCREEN_ID, duration:${ACTUAL_DURATION}s)"
 
     # Record chunk - if it fails, loop will retry
     # -movflags: frag_keyframe+empty_moov makes file playable even if interrupted
@@ -157,7 +164,7 @@ while true; do
         -framerate 1 \
         -capture_cursor 1 \
         -i "$SCREEN_ID" \
-        -t "$CHUNK_DURATION" \
+        -t "$ACTUAL_DURATION" \
         -vf "fps=$FPS" \
         -c:v h264_videotoolbox \
         -b:v "$BITRATE" \
