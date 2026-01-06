@@ -1,5 +1,17 @@
 # macOS
 .DS_Store
+*.swp
+*~
 
-# App bundles
-*.app/
+# Logs
+*.log
+
+# Test videos
+test_*.mp4
+*_gemini.mp4
+
+# Recordings directory (too large for git)
+ScreenMemory/
+
+# Keep the launcher app
+!ContextRecorder.app
